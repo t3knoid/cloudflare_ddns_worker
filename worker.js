@@ -1,7 +1,7 @@
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    
+
     // 1. Extract query parameters sent by the Omada router
     const ip = url.searchParams.get('ip');
     const domain = url.searchParams.get('domain');
@@ -17,15 +17,15 @@ export default {
     }
 
     try {
-      // 3. Find the existing DNS record ID for the domain using environment variables
-      const searchUrl = `https://cloudflare.com{env.CLOUDFLARE_ZONE_ID}/dns_records?name=${domain}&type=A`;
+      // 3. Find the existing DNS record ID for the domain
+      const searchUrl = `https://api.cloudflare.com/client/v4/zones/${env.CLOUDFLARE_ZONE_ID}/dns_records?name=${domain}&type=A`;
       const searchResponse = await fetch(searchUrl, {
         headers: {
           "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}`,
           "Content-Type": "application/json"
         }
       });
-      
+
       const searchData = await searchResponse.json();
       if (!searchData.success || searchData.result.length === 0) {
         return new Response(`DNS Record for ${domain} not found. Please create an 'A' record manually first.`, { status: 404 });
@@ -42,7 +42,7 @@ export default {
       }
 
       // 5. Update the DNS record with the new IP
-      const updateUrl = `https://cloudflare.com{env.CLOUDFLARE_ZONE_ID}/dns_records/${recordId}`;
+      const updateUrl = `https://api.cloudflare.com/client/v4/zones/${env.CLOUDFLARE_ZONE_ID}/dns_records/${recordId}`;
       const updateResponse = await fetch(updateUrl, {
         method: "PUT",
         headers: {
@@ -53,8 +53,8 @@ export default {
           type: "A",
           name: domain,
           content: ip,
-          ttl: 1, 
-          proxied: false 
+          ttl: 1,
+          proxied: false
         })
       });
 
